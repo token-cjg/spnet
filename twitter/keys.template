@@ -1,0 +1,5 @@
+consumer_key	your_string_here_no_quotes
+consumer_secret	your_string_here_no_quotes
+access_token	your_string_here_no_quotes
+access_token_secret	your_string_here_no_quotes
+redirect_uri	http://127.0.0.1:8000/twitter_oauth

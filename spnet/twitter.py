@@ -3,7 +3,41 @@ try:
 except ImportError:
     pass
 import urllib2
-#import core
+import core    #included 8:00pm 2.8.2013 Rod Shapeley
+
+
+TWITTER_AUTH_URI = 'https://api.twitter.com/oauth/authorize'
+TWITTER_ACCESS_TOKEN_URI = 'https://api.twitter.com/oauth/access_token'
+TWITTER_REQUEST_TOKEN_URI = 'https://api.twitter.com/oauth/request_token'
+
+
+class OAuth(object):
+    def __init__(self, auth_uri=TWITTER_AUTH_URI,
+                 token_uri=TWITTER_ACCESS_TOKEN_URI,
+                 token_request_uri=TWITTER_REQUEST_TOKEN_URI,
+                 #scope='https://www.googleapis.com/auth/plus.login',
+                 #requestvisibleactions='http://schemas.google.com/AddActivity',
+                 timestamp = '', version = "1.0",
+                 method = "HMAC-SHA1",
+                 #response_type='code', access_type='offline', user_agent=None,
+                 keys=None, **kwargs):
+        self.auth_uri = auth_uri
+        self.token_uri = token_uri
+        self.token_request_uri = token_request_uri
+        self.user_agent = None
+        self.state = ''.join([random.choice(string.ascii_uppercase + string.digits)
+                              for x in xrange(32)])
+        if not keys:
+            keys = read_keyfile()
+        self.keys = keys
+        d = dict(oauth_nonce=self.state, oauth_callback=self.keys['redirect_uri'],
+                 oauth_signature_method = method, oauth_timestamp = '',
+                 oauth_consumer_key = self.keys['consumer_key'],
+                 oauth_signature = self.keys['consumer_secret'],
+                 oauth_version = version)
+        d.update(kwargs)
+        self.login_url = auth_uri + '?' + urllib.urlencode(d)
+
 
 ###############################################################
 # OAuth functions
@@ -121,6 +155,9 @@ def get_auth_person(auth):
     user = get_auth_user(auth, api)
     p = get_person(user, auth.access_token)
     return p, user, api
+
+
+#class
 
     
 

@@ -7,12 +7,18 @@ import apptree
 import view
 from sessioninfo import get_session
 
+
+    
+    #modelled off gplus oauth login
+
+
 class Server(object):
     def __init__(self, dbconn=None, colls=None, **kwargs):
         if not dbconn:
             dbconn = connect.init_connection(**kwargs)
         self.dbconn = dbconn
         self.gplus_keys = gplus.get_keys()
+        self.twitter_keys = twitter.read_keyfile()
         self.reload_views(colls)
 
     def start(self):
@@ -44,21 +50,35 @@ class Server(object):
         return view.redirect('/view?view=person&person=' + str(p._id))
     login.exposed = True
 
+    #31.7.2013 (Rod Shapeley):
+    #
+    #note that localhost:8000 will have to be changed if moving to production.
+    #need to refer to cp.conf here
+
     def twitter_login(self):
         redirect_url, tokens = twitter.start_oauth('http://localhost:8000/twitter_oauth')
         get_session()['twitter_request_token'] = tokens
+        self.twitter_session = get_session()['twitter_request_token']    #workaround for disappearing session key 2.8.2013 Rod Shapeley
         return view.redirect(redirect_url)
     twitter_login.exposed = True
 
+
     def twitter_oauth(self, oauth_token, oauth_verifier):
-        t = get_session()['twitter_request_token']
-        auth = twitter.complete_oauth(t[0], t[1], oauth_verifier)
-        p, user, api = twitter.get_auth_person(auth)
-        get_session()['person'] = p
-        get_session()['twitter_user'] = user
-        get_session()['twitter_api'] = api
+        t = self.twitter_session
+        auth = twitter.complete_oauth(t[0], t[1], oauth_verifier)    #now up to here 7:54pm 2.8.2013 Rod Shapeley
+        #print "no problems so far"
+        p, user, api = twitter.get_auth_person(auth)  #now up to here 7:58pm 2.8.2013 Rod Shapeley
+        get_session()['twitter_oauth'] = auth     # workaround - extract p, user, api from auth. 7.8.2013 Rod Shapeley
         self.twitter_auth = auth # just for hand testing
-        return 'Logged in to twitter'
+        # pickling error http://docs.python.org/2/library/pickle.html#what-can-be-pickled-and-unpickled
+        # therefore will need to rewrite previous functions (oauth_twitter) as a class twitter.Oauth
+        # in order that it can be pickled.  at least, that's a good start. 8:26pm 2.8.2013 Rod Shapeley
+        #the problem is not with twitter.complete_oauth, twitter.start_oauth.  No, the problem is with
+        #twitter.get_auth_person(auth) .... this is where the problem lies.
+        #no, not even there.  looks like it is in assignation of get_session()['person'] = p.
+        #return 'Logged in to twitter'
+        print 'Logged in to twitter'
+        return view.redirect('http://localhost:8000')  #might need to be changed in production
     twitter_oauth.exposed = True
 
     def gplus_login(self):
